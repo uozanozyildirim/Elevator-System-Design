@@ -20,7 +20,6 @@ services:
       - php
       - redis
       - mysql
-      - mailhog
     networks:
       - laravel
 
@@ -48,7 +47,7 @@ services:
         - UID=${UID:-1000}
         - GID=${GID:-1000}
     ports:
-      - "9000:9000"
+      - "8000:9000"
     volumes:
       - ./src:/var/www/html:delegated
     networks:
@@ -104,11 +103,18 @@ services:
     entrypoint: [ 'php', '/var/www/html/artisan' ]
     networks:
       - laravel
-
-  mailhog:
-    image: mailhog/mailhog:latest
-    ports:
-      - "1025:1025"
-      - "8025:8025"
+  queue-worker:
+    build:
+      context: ./dockerfiles
+      dockerfile: php.dockerfile
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    volumes:
+      - ./src:/var/www/html:delegated
+    depends_on:
+      - php
+      - redis
+    entrypoint: [ 'php', '/var/www/html/artisan', 'queue:work', '--sleep=3', '--tries=3' ]
     networks:
       - laravel
