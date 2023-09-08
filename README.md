@@ -52,7 +52,7 @@ LIMIT 1: Bu bölüm, sorgu sonucunda yalnızca bir asansörün seçilmesini sağ
 
 ### 5. Asansörler için rezervasyon ve kuyruk sistemi geliştirmek istersek uygun bir tablo oluşturur musunuz?
 
-Rezervasyon ve sıra sistemi oluşturmak için, `elevator_queue` adında yeni bir tablo oluşturulabilir. Bu tablonun aşağıdaki sütunlara sahip olması gerekebilir:
+Rezervasyon ve sıra sistemi oluşturmak için, `elevator_reservations` adında yeni bir tablo oluşturulabilir. Bu tablonun aşağıdaki sütunlara sahip olması gerekebilir:
 
 - `id`: isteğe bağlı olarak otomatik oluşan benzersiz kayıt numarası
 - `elevator_id`: Asansörü referansı olan foreign key
@@ -63,4 +63,4 @@ Rezervasyon ve sıra sistemi oluşturmak için, `elevator_queue` adında yeni bi
 - `created_at`: timestamp
 - `updated_at`: timestamp
 
-Bu, sıra queue yönetimini etkili bir şekilde yapmamıza olanak tanır.
+Aynı tablonun uygulamamızda uygulandığı ve her asansör çağırılma olayının bir rezervasyon olarak algılanıp kaydedildiği görülebilir.
