@@ -1,66 +1,66 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+### 1. Zemin katta bulunan bir yolcu, 5. kata gitmek için asansör çağırdığında hangi asansör gelir? Hangi algoritmayı kullandınız?
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Zemin kattan en yakın veya boşta olan, ya da zemin kata doğru hareket eden asansör seçilir. Kullanılan algoritma asansör hareketine uygun şekilde uyarlanmış olan "SSTF(shortest seek time first)" algoritmasıdır.
 
-## About Laravel
+### 2.Bu kodu yazmak için hangi design pattern’ı kullanırsınız ve neden?
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Biz Gözlemci (Observer) ve Durum (State) tasarım desenlerini kullandık:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Gözlemci Deseni (Observer Pattern)**: Asansör sisteminin tüm asansörlerini durum değişiklikleri konusunda bilgilendirmesine izin vermek için kullanıldı. Bu, sistemi genişletilebilir ve yönetilebilir hale getirmeye yardımcı olur.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Durum Deseni (State Pattern)**: Her bir asansörün mevcut durumuna (Yukarı Hareket, Aşağı Hareket, Bekleme) bağlı olarak değişen davranışı kapsamak için kullanıldı. Bu, her bir asansörün durum yönetimini temiz hale getirir.
 
-## Learning Laravel
+### 3. Genişleyebilir bir yapıda bu kodu geliştirmek için ihtiyaç duyacağınız fonksiyon model ve Class sınıfları neler olmalıdır? Hangi parametreleri almalıdır?
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- **ElevatorService (Observable olan service sınıfı)**: Genel asansör sisteminin yönetimini yapar.
+  - `callElevator(int $currentFloor, int $targetFloor)`: Bir asansör çağırır.
+  - `notify()`: Tüm observerları bir durum değişikliği konusunda bilgilendirir.
+  - `getSelectedElevator()`: Şu an seçili olan asansörü döndürür.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- **Elevator (Observer'a sahip olan model)**
+  - `move()`: Asansörü hareket ettirir.
+  - `updateState(Observable $observable)`: Gözlemci içindeki değişikliklere dayanarak asansörün durumunu günceller.
+  
+- **ElevatorState (Statelerin kullanımını sınırlamak amacıyla kullanılan Interface)**
+  - `move(Elevator $elevator)`: Asansörün mevcut durumuna göre nasıl hareket etmesi gerektiğini belirler.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- **ElevatorStateMovingUp (Elevator State Interface'ını impelemente eden Somut Sınıf)**
+- **ElevatorStateMovingDown (Elevator State Interface'ını impelemente eden Somut Sınıf)**
+- **ElevatorStateIdle (Elevator State Interface'ını impelemente eden Somut Sınıf)**
 
-## Laravel Sponsors
+### 4. Asansörler veritabanından hangi asansörün geleceğini sonuç olarak dönecek bir SQL kodu yazar mısınız?
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+Projemizde hangi asansörün kullanılacağını seçen algoritmayı ElevatorService dosyasında yönettik fakat bunu sql'de yönetmek isteseydik;
 
-### Premium Partners
+SELECT name FROM elevators
+WHERE (direction = 'up' AND current_floor <= :current_floor AND target_floor >= :target_floor)
+OR (direction = 'down' AND current_floor >= :current_floor AND target_floor <= :target_floor)
+ORDER BY ABS(current_floor - :current_floor)
+LIMIT 1;
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+Sorgusunu yazabilirdik, bu yöntemle oluşturduğumuz koşullar şu şekilde;
 
-## Contributing
+İlk koşul: direction = 'up' AND current_floor <= :current_floor AND target_floor >= :target_floor: Bu koşul, asansörün yukarı yönde hareket ettiği ve hedef kat aralığına gitmek istediği durumu kontrol eder. current_floor, mevcut katı belirtir ve target_floor, hedef katı belirtir. Bu koşul, asansörün belli bir aralığı hedeflediğini belirtir.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+İkinci koşul: direction = 'down' AND current_floor >= :current_floor AND target_floor <= :target_floor: Bu koşul, asansörün aşağı yönde hareket ettiği ve hedef kat aralığına gitmek istediği durumu kontrol eder. Yine current_floor ve target_floor değişkenleri kullanılır.
 
-## Code of Conduct
+ORDER BY ABS(current_floor - :current_floor): Bu bölüm, sorgu sonucunda bulunan asansörlerin sıralamasını belirler. Asansörlerin mevcut katları ile belirtilen :current_floor arasındaki farkın mutlak değerine göre sıralanır. Bu, asansörün mevcut katı ile istenen kat arasındaki en küçük farka göre sıralanmalarını sağlar. Varsayılan haliyle ASC olarak sıralanır. 
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+LIMIT 1: Bu bölüm, sorgu sonucunda yalnızca bir asansörün seçilmesini sağlar. Yani, en uygun asansörü bulduğunuzda sadece bu asansörün adını alırsınız.
 
-## Security Vulnerabilities
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
-## License
+### 5. Asansörler için rezervasyon ve kuyruk sistemi geliştirmek istersek uygun bir tablo oluşturur musunuz?
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Rezervasyon ve sıra sistemi oluşturmak için, `elevator_queue` adında yeni bir tablo oluşturulabilir. Bu tablonun aşağıdaki sütunlara sahip olması gerekebilir:
+
+- `id`: isteğe bağlı olarak otomatik oluşan benzersiz kayıt numarası
+- `elevator_id`: Asansörü referansı olan foreign key
+- `current_floor`: Asansörün çağrıldığı kat
+- `target_floor`: Asansörün gitmesi gereken kat
+- `status`: Enum ('bekliyor', 'devam ediyor', 'tamamlandı')
+- `priority`: Sıra içindeki sırayı belirlemek için gereken alan
+- `created_at`: timestamp
+- `updated_at`: timestamp
+
+Bu, sıra queue yönetimini etkili bir şekilde yapmamıza olanak tanır.
