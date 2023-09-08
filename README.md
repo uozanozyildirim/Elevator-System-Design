@@ -1,78 +1,66 @@
-## Usage
+### 1. Zemin katta bulunan bir yolcu, 5. kata gitmek için asansör çağırdığında hangi asansör gelir? Hangi algoritmayı kullandınız?
 
-To get started, make sure you have [Docker installed](https://docs.docker.com/docker-for-mac/install/) on your system, and then clone this repository.
+Zemin kattan en yakın veya boşta olan, ya da zemin kata doğru hareket eden asansör seçilir. Kullanılan algoritma asansör hareketine uygun şekilde uyarlanmış olan "SSTF(shortest seek time first)" algoritmasıdır.
 
-Next, navigate in your terminal to the directory you cloned this, and spin up the containers for the web server by running `docker-compose up -d --build app`.
+### 2.Bu kodu yazmak için hangi design pattern’ı kullanırsınız ve neden?
 
-After that completes, follow the steps from the [src/README.md](src/README.md) file to get your Laravel project added in (or create a new blank one).
+Biz Gözlemci (Observer) ve Durum (State) tasarım desenlerini kullandık:
 
-**Note**: Your MySQL database host name should be `mysql`, **not** `localhost`. The username and database should both be `homestead` with a password of `secret`. 
+- **Gözlemci Deseni (Observer Pattern)**: Asansör sisteminin tüm asansörlerini durum değişiklikleri konusunda bilgilendirmesine izin vermek için kullanıldı. Bu, sistemi genişletilebilir ve yönetilebilir hale getirmeye yardımcı olur.
 
-Bringing up the Docker Compose network with `app` instead of just using `up`, ensures that only our site's containers are brought up at the start, instead of all of the command containers as well. The following are built for our web server, with their exposed ports detailed:
+- **Durum Deseni (State Pattern)**: Her bir asansörün mevcut durumuna (Yukarı Hareket, Aşağı Hareket, Bekleme) bağlı olarak değişen davranışı kapsamak için kullanıldı. Bu, her bir asansörün durum yönetimini temiz hale getirir.
 
-- **nginx** - `:80`
-- **mysql** - `:3306`
-- **php** - `:9000`
-- **redis** - `:6379`
-- **mailhog** - `:8025` 
+### 3. Genişleyebilir bir yapıda bu kodu geliştirmek için ihtiyaç duyacağınız fonksiyon model ve Class sınıfları neler olmalıdır? Hangi parametreleri almalıdır?
 
-Three additional containers are included that handle Composer, NPM, and Artisan commands *without* having to have these platforms installed on your local computer. Use the following command examples from your project root, modifying them to fit your particular use case.
+- **ElevatorService (Observable olan service sınıfı)**: Genel asansör sisteminin yönetimini yapar.
+  - `callElevator(int $currentFloor, int $targetFloor)`: Bir asansör çağırır.
+  - `notify()`: Tüm observerları bir durum değişikliği konusunda bilgilendirir.
+  - `getSelectedElevator()`: Şu an seçili olan asansörü döndürür.
 
-- `docker-compose run --rm composer update`
-- `docker-compose run --rm npm run dev`
-- `docker-compose run --rm artisan migrate`
+- **Elevator (Observer'a sahip olan model)**
+  - `move()`: Asansörü hareket ettirir.
+  - `updateState(Observable $observable)`: Gözlemci içindeki değişikliklere dayanarak asansörün durumunu günceller.
+  
+- **ElevatorState (Statelerin kullanımını sınırlamak amacıyla kullanılan Interface)**
+  - `move(Elevator $elevator)`: Asansörün mevcut durumuna göre nasıl hareket etmesi gerektiğini belirler.
 
-## Permissions Issues
+- **ElevatorStateMovingUp (Elevator State Interface'ını impelemente eden Somut Sınıf)**
+- **ElevatorStateMovingDown (Elevator State Interface'ını impelemente eden Somut Sınıf)**
+- **ElevatorStateIdle (Elevator State Interface'ını impelemente eden Somut Sınıf)**
 
-If you encounter any issues with filesystem permissions while visiting your application or running a container command, try completing one of the sets of steps below.
+### 4. Asansörler veritabanından hangi asansörün geleceğini sonuç olarak dönecek bir SQL kodu yazar mısınız?
 
-**If you are using your server or local environment as the root user:**
+Projemizde hangi asansörün kullanılacağını seçen algoritmayı ElevatorService dosyasında yönettik fakat bunu sql'de yönetmek isteseydik;
 
-- Bring any container(s) down with `docker-compose down`
-- Replace any instance of `php.dockerfile` in the docker-compose.yml file with `php.root.dockerfile`
-- Re-build the containers by running `docker-compose build --no-cache`
+SELECT name FROM elevators
+WHERE (direction = 'up' AND current_floor <= :current_floor AND target_floor >= :target_floor)
+OR (direction = 'down' AND current_floor >= :current_floor AND target_floor <= :target_floor)
+ORDER BY ABS(current_floor - :current_floor)
+LIMIT 1;
 
-**If you are using your server or local environment as a user that is not root:**
+Sorgusunu yazabilirdik, bu yöntemle oluşturduğumuz koşullar şu şekilde;
 
-- Bring any container(s) down with `docker-compose down`
-- In your terminal, run `export UID=$(id -u)` and then `export GID=$(id -g)`
-- If you see any errors about readonly variables from the above step, you can ignore them and continue
-- Re-build the containers by running `docker-compose build --no-cache`
+İlk koşul: direction = 'up' AND current_floor <= :current_floor AND target_floor >= :target_floor: Bu koşul, asansörün yukarı yönde hareket ettiği ve hedef kat aralığına gitmek istediği durumu kontrol eder. current_floor, mevcut katı belirtir ve target_floor, hedef katı belirtir. Bu koşul, asansörün belli bir aralığı hedeflediğini belirtir.
 
-Then, either bring back up your container network or re-run the command you were trying before, and see if that fixes it.
+İkinci koşul: direction = 'down' AND current_floor >= :current_floor AND target_floor <= :target_floor: Bu koşul, asansörün aşağı yönde hareket ettiği ve hedef kat aralığına gitmek istediği durumu kontrol eder. Yine current_floor ve target_floor değişkenleri kullanılır.
 
-## Persistent MySQL Storage
+ORDER BY ABS(current_floor - :current_floor): Bu bölüm, sorgu sonucunda bulunan asansörlerin sıralamasını belirler. Asansörlerin mevcut katları ile belirtilen :current_floor arasındaki farkın mutlak değerine göre sıralanır. Bu, asansörün mevcut katı ile istenen kat arasındaki en küçük farka göre sıralanmalarını sağlar. Varsayılan haliyle ASC olarak sıralanır. 
 
-By default, whenever you bring down the Docker network, your MySQL data will be removed after the containers are destroyed. If you would like to have persistent data that remains after bringing containers down and back up, do the following:
+LIMIT 1: Bu bölüm, sorgu sonucunda yalnızca bir asansörün seçilmesini sağlar. Yani, en uygun asansörü bulduğunuzda sadece bu asansörün adını alırsınız.
 
-1. Create a `mysql` folder in the project root, alongside the `nginx` and `src` folders.
-2. Under the mysql service in your `docker-compose.yml` file, add the following lines:
 
-```
-volumes:
-  - ./mysql:/var/lib/mysql
-```
 
-## Usage in Production
+### 5. Asansörler için rezervasyon ve kuyruk sistemi geliştirmek istersek uygun bir tablo oluşturur musunuz?
 
-While I originally created this template for local development, it's robust enough to be used in basic Laravel application deployments. The biggest recommendation would be to ensure that HTTPS is enabled by making additions to the `nginx/default.conf` file and utilizing something like [Let's Encrypt](https://hub.docker.com/r/linuxserver/letsencrypt) to produce an SSL certificate.
+Rezervasyon ve sıra sistemi oluşturmak için, `elevator_queue` adında yeni bir tablo oluşturulabilir. Bu tablonun aşağıdaki sütunlara sahip olması gerekebilir:
 
-## Compiling Assets
+- `id`: isteğe bağlı olarak otomatik oluşan benzersiz kayıt numarası
+- `elevator_id`: Asansörü referansı olan foreign key
+- `current_floor`: Asansörün çağrıldığı kat
+- `target_floor`: Asansörün gitmesi gereken kat
+- `status`: Enum ('bekliyor', 'devam ediyor', 'tamamlandı')
+- `priority`: Sıra içindeki sırayı belirlemek için gereken alan
+- `created_at`: timestamp
+- `updated_at`: timestamp
 
-This configuration should be able to compile assets with both [laravel mix](https://laravel-mix.com/) and [vite](https://vitejs.dev/). In order to get started, you first need to add ` --host 0.0.0.0` after the end of your relevant dev command in `package.json`. So for example, with a Laravel project using Vite, you should see:
-
-```json
-"scripts": {
-  "dev": "vite --host 0.0.0.0",
-  "build": "vite build"
-},
-```
-
-Then, run the following commands to install your dependencies and start the dev server:
-
-- `docker-compose run --rm npm install`
-- `docker-compose run --rm --service-ports npm run dev`
-
-After that, you should be able to use `@vite` directives to enable hot-module reloading on your local Laravel application.
-
-Want to build for production? Simply run `docker-compose run --rm npm run build`.
+Bu, sıra queue yönetimini etkili bir şekilde yapmamıza olanak tanır.
