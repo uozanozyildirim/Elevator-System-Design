@@ -83,8 +83,10 @@ class ElevatorService implements Observable
         // Decide which state the elevator should be in
         if ($targetFloor > $currentFloor) {
             $this->selectedElevator->setState(new MovingUpState());
-        } else {
+        } elseif ($targetFloor < $currentFloor) {
             $this->selectedElevator->setState(new MovingDownState());
+        } else {
+            $this->selectedElevator->setState(new IdleState());
         }
 
         $this->selectedElevator->move();
