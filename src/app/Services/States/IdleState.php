@@ -11,7 +11,8 @@ class IdleState implements ElevatorState
 {
     public function move(Elevator $elevator)
     {
-
+        $elevator->direction = 'idle';
+        $elevator->save();
     }
 }
 

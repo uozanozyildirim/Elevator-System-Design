@@ -11,7 +11,8 @@ class MovingDownState implements ElevatorState
 {
     public function move(Elevator $elevator)
     {
-
+        $elevator->direction = 'down';
+        $elevator->save();
     }
 }
 
